@@ -7,18 +7,17 @@ phone.
 Android switches Wireless debugging off every time the phone leaves Wi-Fi. Lab ADB switches it
 back on when the phone is on the lab network again.
 
-> **Status: work in progress (0.2.0).** The app is built but not yet tested on a phone.
+> **Status: work in progress (0.3.0).** 0.2.0 switched Wireless debugging on, on a real phone; 0.3.0 fixes the triggers.
 
 Android 11 or newer. Sideloaded only: it is not on Google Play.
 
 ## What it does
 
 - **Joins the lab Wi-Fi → Wireless debugging on**, within seconds.
-- **A backup check every 15 minutes.** It catches what the Wi-Fi trigger can miss:
-  - moving to another access point of the same Wi-Fi (Android switches Wireless debugging off then);
-  - the app being stopped in the background.
-
-  Android may delay this check while the phone is idle.
+- **Wireless debugging goes off at the lab → back on within seconds.** That covers moving to
+  another access point or band of the same Wi-Fi (Android switches it off then), and switching
+  it off by hand.
+- **A backup check every 15 minutes** for anything the other two miss.
 - **After a restart** it works again once you unlock the phone for the first time.
 - **One screen:**
   - the on/off switch;
@@ -29,6 +28,27 @@ Android 11 or newer. Sideloaded only: it is not on Google Play.
 - **How it decides it's the lab:** the phone has an IPv4 address on Wi-Fi inside the subnet you
   set, for example `192.0.2.0/24`. If you also set a gateway, the network's default route must
   go through it. Prefixes from /8 to /32 only.
+
+## How it works
+
+Three triggers, all doing the same check (switch on? lab subnet? Wireless debugging off?):
+
+1. **Wireless debugging changed.** A job watches the `adb_wifi_enabled` setting and runs a
+   second or two after it changes:
+   - at the lab, it switches Wireless debugging back on at once;
+   - after you leave, it arms trigger 2 for your next arrival.
+
+   The app's own switch-on also wakes this job; it then finds Wireless debugging already on and
+   does nothing.
+2. **Wi-Fi joined.** Android's "Wi-Fi available" notice. Android sends it only once and sends it
+   at once for a Wi-Fi that is already connected, so the app arms it only while no Wi-Fi is
+   connected.
+3. **Every 15 minutes.** A backup check, which also re-arms the other two. For example, if you
+   connect to another Wi-Fi first, that uses up trigger 2; leaving it changes nothing, so this
+   check re-arms trigger 2.
+
+All of them run on the phone only, with Android's own job and network APIs. With battery set to
+"Unrestricted", Android runs them even while the phone is idle (Doze).
 
 ## Security model
 
@@ -78,7 +98,7 @@ All status lines should then show ✓.
 ## Pausing it
 
 Use the switch in the app. While the switch is on and you're at the lab, turning Wireless
-debugging off by hand doesn't last: the backup check turns it back on within about 15 minutes.
+debugging off by hand doesn't last: the app turns it back on within a few seconds.
 
 ## How to revoke
 
