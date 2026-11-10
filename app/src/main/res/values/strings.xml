@@ -1,5 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Lab ADB</string>
-    <string name="setup_in_progress">Lab ADB: setup in progress</string>
+
+    <string name="switch_label">Turn on Wireless debugging at the lab</string>
+
+    <string name="section_lab_network">Lab network</string>
+    <string name="subnet_label">Lab subnet, for example 192.0.2.0/24</string>
+    <string name="gateway_label">Gateway (optional), for example 192.0.2.1</string>
+    <string name="save">Save</string>
+    <string name="saved">Saved: %1$s</string>
+    <string name="saved_with_gateway">Saved: %1$s via %2$s</string>
+    <string name="save_subnet_first">Save the lab subnet first.</string>
+
+    <string name="section_status">Status</string>
+    <string name="status_permission_ok">✓ Permission granted</string>
+    <string name="status_permission_missing">✗ Permission missing. From the computer, run:</string>
+    <string name="grant_command" translatable="false">adb shell pm grant bukin.labadb android.permission.WRITE_SECURE_SETTINGS</string>
+    <string name="status_lab_ok">✓ On the lab Wi-Fi now</string>
+    <string name="status_lab_no_subnet">✗ On the lab Wi-Fi now: save the lab subnet first</string>
+    <string name="status_lab_no_wifi">✗ On the lab Wi-Fi now: no Wi-Fi</string>
+    <string name="status_lab_other">✗ On the lab Wi-Fi now: this is another network</string>
+    <string name="status_adb_on">✓ Wireless debugging on</string>
+    <string name="status_adb_off">✗ Wireless debugging off</string>
+    <string name="status_adb_unknown">✗ Wireless debugging: can\'t read the setting</string>
+    <string name="status_battery_ok">✓ Battery unrestricted</string>
+    <string name="status_battery_bad">✗ Battery not unrestricted: App settings → Battery → Unrestricted</string>
+    <string name="status_pause_ok">✓ Pause app activity if unused: off</string>
+    <string name="status_pause_bad">✗ Pause app activity if unused: on. App settings → turn it off</string>
+
+    <string name="test_now">Test now</string>
+    <string name="app_settings">App settings</string>
+
+    <string name="section_events">Recent events</string>
+    <string name="events_empty">No events yet.</string>
+
+    <string name="setting_switch_off">Switch turned off: paused</string>
+    <string name="setting_saved_log">Settings saved</string>
 </resources>

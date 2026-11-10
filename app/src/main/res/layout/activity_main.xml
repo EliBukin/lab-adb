@@ -1,16 +1,154 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:gravity="center"
-    android:orientation="vertical">
+    android:clipToPadding="false"
+    android:fillViewport="true">
 
-    <TextView
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="16dp"
-        android:text="@string/setup_in_progress"
-        android:textAppearance="?android:attr/textAppearanceLarge" />
+        android:orientation="vertical"
+        android:padding="20dp">
 
-</LinearLayout>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/app_name"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:textStyle="bold" />
+
+        <!-- Platform Switch on purpose: the app uses no AndroidX libraries. -->
+        <Switch
+            android:id="@+id/enabled_switch"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:minHeight="48dp"
+            android:text="@string/switch_label"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            tools:ignore="UseSwitchCompatOrMaterialXml" />
+
+        <TextView
+            style="@style/SectionHeader"
+            android:text="@string/section_lab_network" />
+
+        <TextView
+            android:id="@+id/subnet_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:labelFor="@id/subnet_field"
+            android:text="@string/subnet_label" />
+
+        <EditText
+            android:id="@+id/subnet_field"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:digits="0123456789./"
+            android:importantForAutofill="no"
+            android:inputType="text"
+            android:maxLines="1"
+            android:minHeight="48dp" />
+
+        <TextView
+            android:id="@+id/gateway_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:labelFor="@id/gateway_field"
+            android:text="@string/gateway_label" />
+
+        <EditText
+            android:id="@+id/gateway_field"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:digits="0123456789."
+            android:importantForAutofill="no"
+            android:inputType="text"
+            android:maxLines="1"
+            android:minHeight="48dp" />
+
+        <TextView
+            android:id="@+id/form_message"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:visibility="gone" />
+
+        <Button
+            android:id="@+id/save_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/save" />
+
+        <TextView
+            style="@style/SectionHeader"
+            android:text="@string/section_status" />
+
+        <TextView
+            android:id="@+id/status_permission"
+            style="@style/StatusLine" />
+
+        <TextView
+            android:id="@+id/grant_command"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="20dp"
+            android:fontFamily="monospace"
+            android:text="@string/grant_command"
+            android:textIsSelectable="true"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/status_lab"
+            style="@style/StatusLine" />
+
+        <TextView
+            android:id="@+id/status_adb"
+            style="@style/StatusLine" />
+
+        <TextView
+            android:id="@+id/status_battery"
+            style="@style/StatusLine" />
+
+        <TextView
+            android:id="@+id/status_pause"
+            style="@style/StatusLine" />
+
+        <LinearLayout
+            style="?android:attr/buttonBarStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/test_button"
+                style="?android:attr/buttonBarButtonStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/test_now" />
+
+            <Button
+                android:id="@+id/app_settings_button"
+                style="?android:attr/buttonBarButtonStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/app_settings" />
+        </LinearLayout>
+
+        <TextView
+            style="@style/SectionHeader"
+            android:text="@string/section_events" />
+
+        <TextView
+            android:id="@+id/events"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:lineSpacingExtra="4dp"
+            android:text="@string/events_empty" />
+    </LinearLayout>
+</ScrollView>

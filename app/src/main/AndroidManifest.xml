@@ -1,6 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Step 2 placeholder: no permissions yet. The app must never request INTERNET. -->
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Exactly three permissions. NEVER add INTERNET: the app has no network I/O at all. -->
+
+    <!-- Lets the app write adb_wifi_enabled = 1. A protected permission: Android grants it only
+         when the owner runs "adb shell pm grant", never at install time. -->
+    <uses-permission
+        android:name="android.permission.WRITE_SECURE_SETTINGS"
+        tools:ignore="ProtectedPermissions" />
+    <!-- Re-arms the Wi-Fi trigger after a restart. Also needed for the persisted backup job. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Sees which network the phone is on (subnet and gateway). No location, no Wi-Fi names. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
         android:allowBackup="false"
@@ -12,14 +24,37 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.LabAdb">
 
+        <!-- The only exported component. It ignores any Intent extras. -->
         <activity
             android:name=".MainActivity"
-            android:exported="true">
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Reached only through the app's own explicit PendingIntent. -->
+        <receiver
+            android:name=".NetworkReceiver"
+            android:exported="false" />
+
+        <!-- Not exported: the system still delivers its own broadcasts to it. -->
+        <receiver
+            android:name=".SystemEventReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Only the JobScheduler can bind to it. -->
+        <service
+            android:name=".BackupCheckJob"
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
     </application>
 
 </manifest>
