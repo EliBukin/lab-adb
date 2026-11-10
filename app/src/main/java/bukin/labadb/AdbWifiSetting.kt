@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.ContentResolver
 import android.content.Context
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.provider.Settings
 
 /** The one system setting this app reads and writes: Wireless debugging on or off. */
@@ -14,6 +15,9 @@ object AdbWifiSetting {
 
     fun isPermissionGranted(context: Context): Boolean =
         context.checkSelfPermission(Manifest.permission.WRITE_SECURE_SETTINGS) == PackageManager.PERMISSION_GRANTED
+
+    /** The setting's content URI: the setting-change job watches it (read-only). */
+    fun uri(): Uri = Settings.Global.getUriFor(ADB_WIFI_ENABLED)
 
     /** The current value (0 = off), or null when Android doesn't let the app read it. */
     fun read(resolver: ContentResolver): Int? = try {

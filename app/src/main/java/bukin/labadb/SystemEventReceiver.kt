@@ -7,7 +7,7 @@ import bukin.labadb.core.Trigger
 
 /**
  * Restart (BOOT_COMPLETED, sent after the first unlock) and app update (MY_PACKAGE_REPLACED):
- * Android drops the Wi-Fi trigger then, so re-arm and run one check. Not exported: only the
+ * re-arm (the setting job never survives a restart) and run one check. Not exported: only the
  * system sends these.
  */
 class SystemEventReceiver : BroadcastReceiver() {
@@ -23,8 +23,8 @@ class SystemEventReceiver : BroadcastReceiver() {
         Worker.execute {
             try {
                 val store = Store(app)
-                if (trigger == Trigger.RESTART) store.forgetConnections()
-                if (Arming.sync(app)) {
+                if (trigger == Trigger.RESTART) store.forgetFailedConnection()
+                if (Arming.sync(app).armed) {
                     store.log("${trigger.label}: re-armed")
                     Checker(app).run(trigger)
                 }

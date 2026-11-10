@@ -27,25 +27,22 @@ class Checker(context: Context) {
      * @param manual true for "Test now", which may retry once on a connection where it failed.
      */
     fun run(trigger: Trigger, joined: Network? = null, manual: Boolean = false): CheckResult {
-        // Android re-sends "available" for the current Wi-Fi each time the trigger is re-armed.
-        val effectiveTrigger =
-            if (joined != null && joined.networkHandle == store.lastSeenHandle) Trigger.WIFI_RECHECK else trigger
         val networks = if (joined != null) listOfNotNull(waitForAddress(joined)) else WifiNetworks.connected(connectivity)
+        val value = AdbWifiSetting.read(app.contentResolver)
         val inputs = CheckInputs(
             enabled = store.enabled,
             config = store.labConfig(),
             permissionGranted = AdbWifiSetting.isPermissionGranted(app),
             networks = networks,
-            adbWifiValue = AdbWifiSetting.read(app.contentResolver),
+            adbWifiValue = value,
             failedHandle = store.failedHandle,
             manual = manual,
         )
-        val decision = Decider.decide(inputs)
-        decision.network?.let { store.lastSeenHandle = it.handle }
-        val result = when (decision) {
+        val result = when (val decision = Decider.decide(inputs)) {
             is Decision.Skip -> decision.result
             is Decision.Write -> switchOnAndVerify(decision.network)
         }
+        val effectiveTrigger = Decider.effectiveTrigger(trigger, value)
         val text = Decider.eventText(effectiveTrigger, result)
         if (text != null) store.log(text) else Log.d(Store.TAG, "${effectiveTrigger.label}: ${result.text} (not listed)")
         return result

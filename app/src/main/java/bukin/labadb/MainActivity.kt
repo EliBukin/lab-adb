@@ -78,7 +78,7 @@ class MainActivity : Activity() {
     override fun onResume() {
         super.onResume()
         refreshStatus()
-        if (Arming.sync(this)) runCheck(Trigger.APP_OPENED)
+        if (Arming.sync(this).armed) runCheck(Trigger.APP_OPENED)
     }
 
     private fun onSwitchChanged(isChecked: Boolean) {
@@ -119,7 +119,7 @@ class MainActivity : Activity() {
                 }
                 showFormMessage(saved, isError = false)
                 hideKeyboard()
-                if (Arming.sync(this)) {
+                if (Arming.sync(this).armed) {
                     runCheck(Trigger.SETTINGS_SAVED)
                 } else {
                     store.log(getString(R.string.setting_saved_log))

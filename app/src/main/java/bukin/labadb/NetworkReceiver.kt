@@ -9,8 +9,10 @@ import android.os.Build
 import bukin.labadb.core.Trigger
 
 /**
- * Android sends this (through our own PendingIntent) when a Wi-Fi network becomes available.
- * Not exported. The network in the intent is only a hint: the check reads the real state itself.
+ * Android sends this (through our own one-shot PendingIntent) when a Wi-Fi network becomes
+ * available. Not exported. The network in the intent is only a hint: the check reads the real
+ * state itself. It never re-arms: Wi-Fi is connected now, and the setting-change and backup
+ * jobs arm the trigger again once Wi-Fi is gone.
  */
 class NetworkReceiver : BroadcastReceiver() {
 
@@ -18,7 +20,7 @@ class NetworkReceiver : BroadcastReceiver() {
         if (intent.action != ACTION_WIFI_AVAILABLE) return
         val app = context.applicationContext
         if (!Store(app).enabled) {
-            // A leftover registration: drop it. Never re-arm from here (see Arming.arm).
+            // A leftover registration: drop it. Never re-arm from here (see Arming.sync).
             Arming.disarm(app)
             return
         }

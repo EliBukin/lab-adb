@@ -36,14 +36,9 @@ class Store(context: Context) {
         get() = getHandle(KEY_FAILED_HANDLE)
         set(value) = setHandle(KEY_FAILED_HANDLE, value)
 
-    /** The Wi-Fi connection the last check looked at, to tell a new join from a re-sent one. */
-    var lastSeenHandle: Long?
-        get() = getHandle(KEY_LAST_SEEN_HANDLE)
-        set(value) = setHandle(KEY_LAST_SEEN_HANDLE, value)
-
-    /** After a restart Android numbers networks from scratch, so old handles mean nothing. */
-    fun forgetConnections() {
-        prefs.edit().remove(KEY_FAILED_HANDLE).remove(KEY_LAST_SEEN_HANDLE).apply()
+    /** After a restart Android numbers networks from scratch, so an old handle means nothing. */
+    fun forgetFailedConnection() {
+        failedHandle = null
     }
 
     fun events(): EventLog = synchronized(LOCK) {
@@ -82,7 +77,6 @@ class Store(context: Context) {
         private const val KEY_SUBNET = "subnet"
         private const val KEY_GATEWAY = "gateway"
         private const val KEY_FAILED_HANDLE = "failed_handle"
-        private const val KEY_LAST_SEEN_HANDLE = "last_seen_handle"
         private const val KEY_EVENTS = "events"
         private val LOCK = Any()
     }

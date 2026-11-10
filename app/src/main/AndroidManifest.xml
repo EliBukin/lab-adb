@@ -50,9 +50,13 @@
             </intent-filter>
         </receiver>
 
-        <!-- Only the JobScheduler can bind to it. -->
+        <!-- Only the JobScheduler can bind to these. -->
         <service
             android:name=".BackupCheckJob"
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
+        <service
+            android:name=".SettingChangeJob"
             android:exported="false"
             android:permission="android.permission.BIND_JOB_SERVICE" />
     </application>
