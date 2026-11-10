@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- A phone outline with its screen and home dot cut out. -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M44,30h20a4,4 0,0 1,4 4v40a4,4 0,0 1,-4 4h-20a4,4 0,0 1,-4 -4v-40a4,4 0,0 1,4 -4z M43,35v35h22v-35z M52.5,74a1.5,1.5 0,1 0,3 0a1.5,1.5 0,1 0,-3 0z" />
+</vector>
