@@ -1,0 +1,31 @@
+# Gradle and build output
+.gradle/
+build/
+/.kotlin/
+.externalNativeBuild/
+.cxx/
+/captures/
+
+# Local machine settings (SDK path)
+local.properties
+
+# IDE
+.idea/
+*.iml
+
+# Built apps
+*.apk
+*.aab
+
+# Signing material never belongs in Git
+*.jks
+*.keystore
+*.p12
+*.pfx
+*.pem
+*.key
+keystore.properties
+signing.properties
+
+# OS
+.DS_Store
