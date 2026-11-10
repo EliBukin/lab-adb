@@ -1,12 +1,25 @@
 package bukin.labadb.core
 
-/** What started a check. Quiet triggers log only when the check actually wrote the setting. */
-enum class Trigger(val label: String, val quiet: Boolean = false) {
+/**
+ * What started a check. A quiet trigger is listed only when the check wrote the setting;
+ * [unlistedResults] are never listed for that trigger, because an earlier event already said it.
+ */
+enum class Trigger(
+    val label: String,
+    val quiet: Boolean = false,
+    val unlistedResults: Set<CheckResult> = emptySet(),
+) {
     WIFI_JOINED("Joined Wi-Fi"),
-
-    /** Android re-sent "Wi-Fi available" for a connection already handled (it does on re-arming). */
-    WIFI_RECHECK("Wi-Fi re-check", quiet = true),
     BACKUP_CHECK("Backup check"),
+
+    /**
+     * adb_wifi_enabled changed and now reads anything but 0, for example our own write of 1.
+     * [Decider.effectiveTrigger] turns it into [SETTING_WENT_OFF] when it reads 0.
+     */
+    SETTING_CHANGED("Setting changed", quiet = true),
+
+    /** Android (or the owner) switched Wireless debugging off. A failed switch-on was already listed. */
+    SETTING_WENT_OFF("Wireless debugging went off", unlistedResults = setOf(CheckResult.FAILED_ON_THIS_CONNECTION)),
     RESTART("Restart"),
     APP_UPDATED("App updated"),
     APP_OPENED("App opened", quiet = true),
@@ -47,11 +60,9 @@ data class CheckInputs(
 )
 
 sealed interface Decision {
-    /** The Wi-Fi network the check looked at: the lab network if found, else the first Wi-Fi. */
-    val network: NetworkSnapshot?
-
-    data class Write(override val network: NetworkSnapshot) : Decision
-    data class Skip(val result: CheckResult, override val network: NetworkSnapshot? = null) : Decision
+    /** Write 1 while connected to [network], the lab network. */
+    data class Write(val network: NetworkSnapshot) : Decision
+    data class Skip(val result: CheckResult) : Decision
 }
 
 object Decider {
@@ -68,11 +79,11 @@ object Decider {
         val wifi = inputs.networks.filter { it.isWifi && !it.isVpn }
         if (wifi.isEmpty()) return Decision.Skip(CheckResult.NO_WIFI)
         val lab = wifi.firstOrNull { LabMatcher.match(config, it) == MatchResult.MATCH }
-            ?: return Decision.Skip(CheckResult.NOT_LAB_NETWORK, wifi.first())
-        val value = inputs.adbWifiValue ?: return Decision.Skip(CheckResult.CANNOT_READ_SETTING, lab)
-        if (value != 0) return Decision.Skip(CheckResult.ALREADY_ON, lab)
+            ?: return Decision.Skip(CheckResult.NOT_LAB_NETWORK)
+        val value = inputs.adbWifiValue ?: return Decision.Skip(CheckResult.CANNOT_READ_SETTING)
+        if (value != 0) return Decision.Skip(CheckResult.ALREADY_ON)
         if (!inputs.manual && inputs.failedHandle == lab.handle) {
-            return Decision.Skip(CheckResult.FAILED_ON_THIS_CONNECTION, lab)
+            return Decision.Skip(CheckResult.FAILED_ON_THIS_CONNECTION)
         }
         return Decision.Write(lab)
     }
@@ -87,7 +98,14 @@ object Decider {
         else -> CheckResult.SWITCHED_ON
     }
 
-    /** The event text for a check, or null when it should not be logged (quiet trigger, no write). */
-    fun eventText(trigger: Trigger, result: CheckResult): String? =
-        if (trigger.quiet && !result.wrote) null else "${trigger.label}: ${result.text}"
+    /** A setting change that reads 0 means Wireless debugging just went off. */
+    fun effectiveTrigger(trigger: Trigger, adbWifiValue: Int?): Trigger =
+        if (trigger == Trigger.SETTING_CHANGED && adbWifiValue == 0) Trigger.SETTING_WENT_OFF else trigger
+
+    /** The event text for a check, or null when it should not be listed (see [Trigger]). */
+    fun eventText(trigger: Trigger, result: CheckResult): String? = when {
+        trigger.quiet && !result.wrote -> null
+        result in trigger.unlistedResults -> null
+        else -> "${trigger.label}: ${result.text}"
+    }
 }
