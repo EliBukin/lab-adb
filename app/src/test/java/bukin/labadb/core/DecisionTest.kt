@@ -15,6 +15,9 @@ class DecisionTest {
     private val otherWifi = NetworkSnapshot(502L, isWifi = true, isVpn = false, listOf(ip("198.51.100.7")), emptyList())
     private val cellular = NetworkSnapshot(503L, isWifi = false, isVpn = false, listOf(ip("192.0.2.60")), emptyList())
     private val vpnOverWifi = NetworkSnapshot(504L, isWifi = true, isVpn = true, listOf(ip("192.0.2.70")), emptyList())
+    /** A Wi-Fi Direct link the phone hosts (e.g. the car), worst case: an address inside the lab subnet. */
+    private val localLink =
+        NetworkSnapshot(505L, isWifi = true, isVpn = false, listOf(ip("192.0.2.80")), emptyList(), isLocalOnly = true)
 
     /** Every condition for a write holds. Each test breaks one. */
     private val ready = CheckInputs(
@@ -36,6 +39,23 @@ class DecisionTest {
     @Test
     fun writesWhenEverythingHolds() {
         assertEquals(Decision.Write(lab), Decider.decide(ready))
+    }
+
+    @Test
+    fun aLocalLinkAloneIsNoWifi() {
+        assertEquals(CheckResult.NO_WIFI, skipResult(ready.copy(networks = listOf(localLink))))
+        assertEquals(CheckResult.NO_WIFI, skipResult(ready.copy(networks = listOf(localLink, cellular))))
+    }
+
+    @Test
+    fun aLocalLinkBesideTheLabWifiStillFindsTheLab() {
+        assertEquals(Decision.Write(lab), Decider.decide(ready.copy(networks = listOf(localLink, lab))))
+        assertEquals(Decision.Write(lab), Decider.decide(ready.copy(networks = listOf(lab, localLink))))
+    }
+
+    @Test
+    fun aLocalLinkBesideAnotherWifiIsNotTheLab() {
+        assertEquals(CheckResult.NOT_LAB_NETWORK, skipResult(ready.copy(networks = listOf(localLink, otherWifi))))
     }
 
     @Test

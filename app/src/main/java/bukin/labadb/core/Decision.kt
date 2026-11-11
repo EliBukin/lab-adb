@@ -49,7 +49,7 @@ data class CheckInputs(
     /** Null when the saved lab settings are missing or invalid. */
     val config: LabConfig?,
     val permissionGranted: Boolean,
-    /** The connected networks to consider. Non-Wi-Fi entries are ignored. */
+    /** The connected networks to consider. Only real Wi-Fi counts ([NetworkSnapshot.isRealWifi]). */
     val networks: List<NetworkSnapshot>,
     /** The current adb_wifi_enabled value, or null when it could not be read. */
     val adbWifiValue: Int?,
@@ -76,7 +76,7 @@ object Decider {
         if (!inputs.enabled) return Decision.Skip(CheckResult.SWITCH_OFF)
         val config = inputs.config ?: return Decision.Skip(CheckResult.NO_SUBNET)
         if (!inputs.permissionGranted) return Decision.Skip(CheckResult.NO_PERMISSION)
-        val wifi = inputs.networks.filter { it.isWifi && !it.isVpn }
+        val wifi = inputs.networks.filter { it.isRealWifi }
         if (wifi.isEmpty()) return Decision.Skip(CheckResult.NO_WIFI)
         val lab = wifi.firstOrNull { LabMatcher.match(config, it) == MatchResult.MATCH }
             ?: return Decision.Skip(CheckResult.NOT_LAB_NETWORK)

@@ -1,6 +1,8 @@
 package bukin.labadb.core
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class LabMatcherTest {
@@ -30,6 +32,21 @@ class LabMatcherTest {
     @Test
     fun vpnIsNeverTheLab() {
         assertEquals(MatchResult.NOT_WIFI, LabMatcher.match(noGateway, wifi(isVpn = true)))
+    }
+
+    @Test
+    fun localOnlyLinkIsNeverTheLab() {
+        // Wi-Fi Direct or hotspot, even with an address inside the lab subnet.
+        assertEquals(MatchResult.NOT_WIFI, LabMatcher.match(noGateway, wifi().copy(isLocalOnly = true)))
+        assertEquals(MatchResult.NOT_WIFI, LabMatcher.match(withGateway, wifi().copy(isLocalOnly = true)))
+    }
+
+    @Test
+    fun realWifiMeansJoinedWifiOnly() {
+        assertTrue(wifi().isRealWifi)
+        assertFalse(wifi(isWifi = false).isRealWifi)
+        assertFalse(wifi(isVpn = true).isRealWifi)
+        assertFalse(wifi().copy(isLocalOnly = true).isRealWifi)
     }
 
     @Test

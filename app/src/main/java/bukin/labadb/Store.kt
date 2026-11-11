@@ -36,6 +36,11 @@ class Store(context: Context) {
         get() = getHandle(KEY_FAILED_HANDLE)
         set(value) = setHandle(KEY_FAILED_HANDLE, value)
 
+    /** What the app last did with the instant trigger, so only a change gets an event. */
+    var instantTriggerArmed: Boolean
+        get() = prefs.getBoolean(KEY_INSTANT_TRIGGER_ARMED, false)
+        set(value) = prefs.edit().putBoolean(KEY_INSTANT_TRIGGER_ARMED, value).apply()
+
     /** After a restart Android numbers networks from scratch, so an old handle means nothing. */
     fun forgetFailedConnection() {
         failedHandle = null
@@ -77,6 +82,7 @@ class Store(context: Context) {
         private const val KEY_SUBNET = "subnet"
         private const val KEY_GATEWAY = "gateway"
         private const val KEY_FAILED_HANDLE = "failed_handle"
+        private const val KEY_INSTANT_TRIGGER_ARMED = "instant_trigger_armed"
         private const val KEY_EVENTS = "events"
         private val LOCK = Any()
     }

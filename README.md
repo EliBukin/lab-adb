@@ -7,7 +7,7 @@ phone.
 Android switches Wireless debugging off every time the phone leaves Wi-Fi. Lab ADB switches it
 back on when the phone is on the lab network again.
 
-> **Status: work in progress (0.3.0).** 0.2.0 switched Wireless debugging on, on a real phone; 0.3.0 fixes the triggers.
+> **Status: work in progress (0.4.0).** 0.2.0 switched Wireless debugging on, on a real phone; 0.3.0 fixed the triggers; 0.4.0 ignores direct Wi-Fi links.
 
 Android 11 or newer. Sideloaded only: it is not on Google Play.
 
@@ -18,6 +18,8 @@ Android 11 or newer. Sideloaded only: it is not on Google Play.
   another access point or band of the same Wi-Fi (Android switches it off then), and switching
   it off by hand.
 - **A backup check every 15 minutes** for anything the other two miss.
+- **Direct Wi-Fi links are ignored:** car Android Auto, screen mirroring, Quick Share and the
+  phone's own hotspot don't count as a Wi-Fi, and are never the lab.
 - **After a restart** it works again once you unlock the phone for the first time.
 - **One screen:**
   - the on/off switch;
@@ -40,9 +42,10 @@ Three triggers, all doing the same check (switch on? lab subnet? Wireless debugg
 
    The app's own switch-on also wakes this job; it then finds Wireless debugging already on and
    does nothing.
-2. **Wi-Fi joined.** Android's "Wi-Fi available" notice. Android sends it only once and sends it
-   at once for a Wi-Fi that is already connected, so the app arms it only while no Wi-Fi is
-   connected.
+2. **Wi-Fi joined** (the instant trigger). Android's "Wi-Fi available" notice. Android sends it
+   only once and sends it at once for a Wi-Fi that is already connected, so the app arms it only
+   while no Wi-Fi is connected. The event list shows `Instant trigger armed` and
+   `Instant trigger off: Wi-Fi connected`, only when that changes.
 3. **Every 15 minutes.** A backup check, which also re-arms the other two. For example, if you
    connect to another Wi-Fi first, that uses up trigger 2; leaving it changes nothing, so this
    check re-arms trigger 2.

@@ -19,9 +19,13 @@ import java.util.concurrent.TimeUnit
  * 1. [SettingChangeJob]: runs whenever adb_wifi_enabled changes (leaving the lab, roaming,
  *    a band switch, switched off by hand).
  * 2. [BackupCheckJob]: every 15 minutes.
- * 3. Android's "Wi-Fi available" trigger to [NetworkReceiver]. It is one-shot: Android drops it
- *    about 5 s after sending it, and sends it at once for a Wi-Fi already connected. So it is
- *    armed only while no Wi-Fi is connected, to catch the NEXT join.
+ * 3. Android's "Wi-Fi available" trigger to [NetworkReceiver] (the "instant trigger"). It is
+ *    one-shot: Android drops it about 5 s after sending it, and sends it at once for a Wi-Fi
+ *    already connected. So it is armed only while no real Wi-Fi is connected, to catch the NEXT
+ *    join. Local-only links (Wi-Fi Direct, hotspot) can't fire it: with targetSdk 36, Android
+ *    keeps non-Thread local networks out of an app's requests (compat change
+ *    ENABLE_MATCH_NON_THREAD_LOCAL_NETWORKS, off below targetSdk 37 in Android 16 QPR2).
+ *    Re-check this before raising targetSdk.
  */
 object Arming {
 
@@ -42,7 +46,7 @@ object Arming {
      *   Android carries over any change it saw during the run (AOSP JobInfo docs). Everywhere
      *   else a pending or running setting job is left alone.
      */
-    fun sync(context: Context, replaceSettingJob: Boolean = false): ArmPlan {
+    fun sync(context: Context, replaceSettingJob: Boolean = false): ArmPlan = synchronized(this) {
         val app = context.applicationContext
         val store = Store(app)
         val connectivity = app.getSystemService(ConnectivityManager::class.java)
@@ -56,19 +60,29 @@ object Arming {
         } else {
             connectivity.unregisterNetworkCallback(wifiIntent(app))
         }
+        recordInstantTrigger(store, plan)
         Log.d(Store.TAG, "Armed: $plan")
         // Last: renewing the setting job from inside its own run ends that run.
         if (plan.settingJob) scheduleSettingJob(app, jobs, replaceSettingJob) else jobs.cancel(SETTING_JOB_ID)
-        return plan
+        plan
     }
 
-    fun disarm(context: Context) {
+    fun disarm(context: Context): Unit = synchronized(this) {
         val app = context.applicationContext
         val jobs = app.getSystemService(JobScheduler::class.java)
         jobs.cancel(BACKUP_JOB_ID)
         jobs.cancel(SETTING_JOB_ID)
         app.getSystemService(ConnectivityManager::class.java).unregisterNetworkCallback(wifiIntent(app))
+        recordInstantTrigger(Store(app), ArmRule.DISARMED)
         Log.d(Store.TAG, "Disarmed")
+    }
+
+    /** Lists the instant trigger's state in the event list, only on a change ([ArmRule.triggerEvent]). */
+    private fun recordInstantTrigger(store: Store, plan: ArmPlan) {
+        val wasArmed = store.instantTriggerArmed
+        if (plan.wifiTrigger == wasArmed) return
+        store.instantTriggerArmed = plan.wifiTrigger
+        ArmRule.triggerEvent(wasArmed, plan)?.let(store::log)
     }
 
     /** Rescheduling a periodic job restarts its clock, so only schedule when missing or changed. */
