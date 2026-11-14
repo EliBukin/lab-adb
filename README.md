@@ -7,7 +7,9 @@ phone.
 Android switches Wireless debugging off every time the phone leaves Wi-Fi. Lab ADB switches it
 back on when the phone is on the lab network again.
 
-> **Status: work in progress (0.4.0).** 0.2.0 switched Wireless debugging on, on a real phone; 0.3.0 fixed the triggers; 0.4.0 ignores direct Wi-Fi links.
+> **Status: 0.4.0, working.** Tested in daily use on a Samsung phone with Android 16: a restart,
+> a full day at the lab, and trips away and back. Each time it switched Wireless debugging back on
+> by itself, within half a second of joining the lab Wi-Fi.
 
 Android 11 or newer. Sideloaded only: it is not on Google Play.
 
@@ -20,7 +22,8 @@ Android 11 or newer. Sideloaded only: it is not on Google Play.
 - **A backup check every 15 minutes** for anything the other two miss.
 - **Direct Wi-Fi links are ignored:** car Android Auto, screen mirroring, Quick Share and the
   phone's own hotspot don't count as a Wi-Fi, and are never the lab.
-- **After a restart** it works again once you unlock the phone for the first time.
+- **After a restart** it works again once you unlock the phone for the first time. Some Samsung
+  phones send that signal a few minutes late.
 - **One screen:**
   - the on/off switch;
   - the lab subnet (and an optional gateway);
@@ -98,6 +101,16 @@ All of them run on the phone only, with Android's own job and network APIs. With
 
 All status lines should then show ✓.
 
+## Known limits
+
+- **Another Wi-Fi straight to the lab Wi-Fi**, with no break in between: the instant trigger is
+  not armed while another Wi-Fi is connected, so the 15-minute check switches it on.
+- **A private Wi-Fi link that an app sets up for itself** (rare) still counts as a Wi-Fi and
+  holds the instant trigger off. Again the 15-minute check covers it.
+- **A new port each time.** Android picks a new random port whenever Wireless debugging starts.
+  The paired computer has to find it, for example with `adb mdns services` on the same subnet, or
+  a script that scans the phone's ports and runs `adb connect`.
+
 ## Pausing it
 
 Use the switch in the app. While the switch is on and you're at the lab, turning Wireless
@@ -120,6 +133,9 @@ Or simply uninstall the app.
 ```
 
 The APK lands in `app/build/outputs/apk/debug/`. Unit tests: `./gradlew test`.
+
+Keep `targetSdk` at 36. From 37 on, Android can match direct Wi-Fi links (such as a car's
+Android Auto link) to the app's "Wi-Fi joined" request, and they would fire the instant trigger.
 
 ## Licence
 
