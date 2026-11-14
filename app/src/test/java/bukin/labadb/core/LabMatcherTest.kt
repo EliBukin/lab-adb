@@ -83,4 +83,19 @@ class LabMatcherTest {
             LabMatcher.match(withGateway, wifi(addresses = listOf("198.51.100.7"), gateways = listOf("192.0.2.1"))),
         )
     }
+
+    @Test
+    fun labAddressIsThePhonesAddressInsideTheSubnet() {
+        val twoAddresses = wifi(addresses = listOf("198.51.100.4", "192.0.2.50"))
+        assertEquals(ip("192.0.2.50"), LabMatcher.labAddress(noGateway, twoAddresses))
+        assertEquals(ip("192.0.2.50"), LabMatcher.labAddress(withGateway, wifi()))
+    }
+
+    @Test
+    fun labAddressIsNullOffTheLab() {
+        assertEquals(null, LabMatcher.labAddress(noGateway, wifi(addresses = listOf("198.51.100.4"))))
+        assertEquals(null, LabMatcher.labAddress(withGateway, wifi(gateways = listOf("192.0.2.254"))))
+        assertEquals(null, LabMatcher.labAddress(noGateway, wifi().copy(isLocalOnly = true)))
+        assertEquals(null, LabMatcher.labAddress(noGateway, wifi(isVpn = true)))
+    }
 }

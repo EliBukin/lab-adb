@@ -36,4 +36,8 @@ object LabMatcher {
         if (gateway != null && gateway !in network.ipv4DefaultGateways) return MatchResult.GATEWAY_MISMATCH
         return MatchResult.MATCH
     }
+
+    /** The phone's own IPv4 address inside the lab subnet, or null when [network] isn't the lab. */
+    fun labAddress(config: LabConfig, network: NetworkSnapshot): Int? =
+        if (match(config, network) == MatchResult.MATCH) network.ipv4Addresses.first { config.subnet.contains(it) } else null
 }

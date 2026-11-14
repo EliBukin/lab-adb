@@ -48,4 +48,12 @@ class Ipv4Test {
         assertNull(Ipv4.fromBytes(ByteArray(16)))
         assertNull(Ipv4.fromBytes(ByteArray(3)))
     }
+
+    @Test
+    fun writesRawBytesInNetworkOrder() {
+        assertEquals(listOf(192, 0, 2, 200), Ipv4.toBytes(Ipv4.parse("192.0.2.200")!!).map { it.toInt() and 0xFF })
+        for (text in listOf("0.0.0.0", "203.0.113.9", "255.255.255.255")) {
+            assertEquals(text, Ipv4.format(Ipv4.fromBytes(Ipv4.toBytes(Ipv4.parse(text)!!))!!))
+        }
+    }
 }

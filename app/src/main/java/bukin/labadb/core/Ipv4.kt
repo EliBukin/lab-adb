@@ -28,6 +28,9 @@ object Ipv4 {
         return bytes.fold(0) { acc, byte -> (acc shl 8) or (byte.toInt() and 0xFF) }
     }
 
+    /** The 4 raw bytes of [address] in network order, for InetAddress.getByAddress (no lookup). */
+    fun toBytes(address: Int): ByteArray = ByteArray(4) { i -> (address ushr (24 - 8 * i)).toByte() }
+
     fun format(address: Int): String =
         listOf(24, 16, 8, 0).joinToString(".") { shift -> ((address ushr shift) and 0xFF).toString() }
 
