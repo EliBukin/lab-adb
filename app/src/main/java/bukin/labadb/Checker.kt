@@ -9,12 +9,14 @@ import bukin.labadb.core.CheckInputs
 import bukin.labadb.core.CheckResult
 import bukin.labadb.core.Decider
 import bukin.labadb.core.Decision
+import bukin.labadb.core.HintRule
 import bukin.labadb.core.NetworkSnapshot
 import bukin.labadb.core.Trigger
 
 /**
  * One check: gather the facts, let [Decider] decide, and switch Wireless debugging on if it says
- * so. Blocking (up to about 8 s when it writes): run it on [Worker] only.
+ * so. Then it may schedule a hint to ANXEL ([HintRule.afterCheck]), which runs apart in [HintJob].
+ * Blocking (up to about 8 s when it writes): run it on [Worker] only.
  */
 class Checker(context: Context) {
 
@@ -45,6 +47,8 @@ class Checker(context: Context) {
         val effectiveTrigger = Decider.effectiveTrigger(trigger, value)
         val text = Decider.eventText(effectiveTrigger, result)
         if (text != null) store.log(text) else Log.d(Store.TAG, "${effectiveTrigger.label}: ${result.text} (not listed)")
+        // Tell ANXEL: a burst after our own confirmed switch-on, a heartbeat at a backup check.
+        HintRule.afterCheck(effectiveTrigger, result)?.let { Hints.schedule(app, it) }
         return result
     }
 

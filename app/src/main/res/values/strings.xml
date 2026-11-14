@@ -31,6 +31,24 @@
     <string name="test_now">Test now</string>
     <string name="app_settings">App settings</string>
 
+    <string name="section_hint">Tell ANXEL where the phone is</string>
+    <string name="hint_phone">Phone IP %1$s, debugging port %2$s</string>
+    <string name="hint_phone_no_wifi">Phone IP: no Wi-Fi</string>
+    <string name="hint_port_unknown">unknown</string>
+    <string name="target_label">ANXEL address (IPv4:port), empty = off</string>
+    <string name="target_example" translatable="false">192.0.2.10:47113</string>
+    <string name="target_saved">Saved: %1$s</string>
+    <string name="target_cleared">Cleared: no hints are sent.</string>
+    <string name="target_saved_log">ANXEL address saved</string>
+    <string name="target_cleared_log">ANXEL address cleared</string>
+    <string name="status_key_ok">✓ Key set: yes</string>
+    <string name="status_key_missing">✗ Key set: no</string>
+    <string name="status_hint_ready">✓ Hint to ANXEL: ready</string>
+    <string name="status_hint_blocked">✗ Hint to ANXEL: not sent, %1$s</string>
+    <string name="hint_last_sent">Last sent %1$s</string>
+    <string name="hint_never_sent">Last sent: never</string>
+    <string name="send_now">Send now</string>
+
     <string name="section_events">Recent events</string>
     <string name="events_empty">No events yet.</string>
 

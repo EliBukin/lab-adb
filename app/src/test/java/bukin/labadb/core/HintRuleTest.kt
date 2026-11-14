@@ -26,7 +26,7 @@ class HintRuleTest {
         assertEquals(HintBlock.SWITCH_OFF, HintRule.block(nothing))
         assertEquals(HintBlock.NOT_ON_LAB, HintRule.block(nothing.copy(enabled = true)))
         assertEquals(HintBlock.DEBUGGING_OFF, HintRule.block(nothing.copy(enabled = true, onLab = true)))
-        assertEquals(HintBlock.NO_KEY, HintRule.block(ready.copy(keySet = false, targetSet = false)))
+        assertEquals(HintBlock.NO_ADDRESS, HintRule.block(ready.copy(keySet = false, targetSet = false)))
     }
 
     @Test
@@ -95,6 +95,17 @@ class HintRuleTest {
         assertEquals(text, HintRule.eventFor(HintKind.BURST, text, lastOutcome = text))
         assertEquals(text, HintRule.eventFor(HintKind.MANUAL, text, lastOutcome = text))
         assertEquals(text, HintRule.eventFor(HintKind.BURST, text, lastOutcome = null))
+    }
+
+    @Test
+    fun withNoAddressTheHintIsOffAndOnlySendNowSaysSo() {
+        val noAddress = HintRule.notSentText(HintBlock.NO_ADDRESS)
+        assertEquals("Hint not sent: no ANXEL address", noAddress)
+        assertNull(HintRule.eventFor(HintKind.BURST, noAddress, lastOutcome = null))
+        assertNull(HintRule.eventFor(HintKind.HEARTBEAT, noAddress, lastOutcome = null))
+        assertEquals(noAddress, HintRule.eventFor(HintKind.MANUAL, noAddress, lastOutcome = noAddress))
+        val noKey = HintRule.notSentText(HintBlock.NO_KEY)
+        assertEquals(noKey, HintRule.eventFor(HintKind.BURST, noKey, lastOutcome = noKey))
     }
 
     @Test

@@ -21,8 +21,10 @@ enum class HintBlock(val text: String) {
     SWITCH_OFF("switch is off"),
     NOT_ON_LAB("not on the lab Wi-Fi"),
     DEBUGGING_OFF("Wireless debugging is off"),
-    NO_KEY("no key"),
+
+    /** The address field is empty: the hint is simply not set up. */
     NO_ADDRESS("no ANXEL address"),
+    NO_KEY("no key"),
 }
 
 /** Everything one hint packet depends on, gathered fresh before each packet. */
@@ -39,13 +41,13 @@ object HintRule {
 
     const val SEND_FAILED = "Hint send failed"
 
-    /** Send only when ALL hold: switch on, lab Wi-Fi, Wireless debugging on, key set, address set. */
+    /** Send only when ALL hold: switch on, lab Wi-Fi, Wireless debugging on, address set, key set. */
     fun block(inputs: HintInputs): HintBlock? = when {
         !inputs.enabled -> HintBlock.SWITCH_OFF
         !inputs.onLab -> HintBlock.NOT_ON_LAB
         !inputs.debuggingOn -> HintBlock.DEBUGGING_OFF
-        !inputs.keySet -> HintBlock.NO_KEY
         !inputs.targetSet -> HintBlock.NO_ADDRESS
+        !inputs.keySet -> HintBlock.NO_KEY
         else -> null
     }
 
@@ -81,7 +83,11 @@ object HintRule {
      * The event to list, if any: one per burst and per Send now. A heartbeat is listed only
      * when its outcome differs from the last one, so the 15-minute heartbeats don't push other
      * events out of the list (they would alternate with the backup check's own event).
+     * With no ANXEL address the hint is off: only Send now lists that (the screen shows it too).
      */
-    fun eventFor(kind: HintKind, outcome: String, lastOutcome: String?): String? =
-        if (kind == HintKind.HEARTBEAT && outcome == lastOutcome) null else outcome
+    fun eventFor(kind: HintKind, outcome: String, lastOutcome: String?): String? = when {
+        kind != HintKind.MANUAL && outcome == notSentText(HintBlock.NO_ADDRESS) -> null
+        kind == HintKind.HEARTBEAT && outcome == lastOutcome -> null
+        else -> outcome
+    }
 }

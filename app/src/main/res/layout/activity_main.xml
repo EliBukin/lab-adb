@@ -142,6 +142,67 @@
 
         <TextView
             style="@style/SectionHeader"
+            android:text="@string/section_hint" />
+
+        <TextView
+            android:id="@+id/hint_phone"
+            style="@style/StatusLine"
+            android:textIsSelectable="true" />
+
+        <TextView
+            android:id="@+id/target_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:labelFor="@id/target_field"
+            android:text="@string/target_label" />
+
+        <EditText
+            android:id="@+id/target_field"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:digits="0123456789.:"
+            android:hint="@string/target_example"
+            android:importantForAutofill="no"
+            android:inputType="text"
+            android:maxLines="1"
+            android:minHeight="48dp" />
+
+        <TextView
+            android:id="@+id/target_message"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:visibility="gone" />
+
+        <Button
+            android:id="@+id/target_save_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/save" />
+
+        <TextView
+            android:id="@+id/status_key"
+            style="@style/StatusLine" />
+
+        <TextView
+            android:id="@+id/status_hint"
+            style="@style/StatusLine" />
+
+        <TextView
+            android:id="@+id/hint_last_sent"
+            style="@style/StatusLine" />
+
+        <Button
+            android:id="@+id/send_now_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/send_now" />
+
+        <TextView
+            style="@style/SectionHeader"
             android:text="@string/section_events" />
 
         <TextView

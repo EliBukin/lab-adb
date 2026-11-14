@@ -5,7 +5,9 @@ import android.content.SharedPreferences
 import android.util.Log
 import bukin.labadb.core.ConfigCheck
 import bukin.labadb.core.EventLog
+import bukin.labadb.core.HintTarget
 import bukin.labadb.core.LabConfig
+import bukin.labadb.core.Parsed
 
 /**
  * The app's own state, in its private SharedPreferences (credential-encrypted storage: the app
@@ -40,6 +42,36 @@ class Store(context: Context) {
     var instantTriggerArmed: Boolean
         get() = prefs.getBoolean(KEY_INSTANT_TRIGGER_ARMED, false)
         set(value) = prefs.edit().putBoolean(KEY_INSTANT_TRIGGER_ARMED, value).apply()
+
+    /** The "ANXEL address" field as saved. Empty (the default) means hints are off. */
+    val hintTargetText: String get() = prefs.getString(KEY_HINT_TARGET, null).orEmpty()
+
+    /** Where hints go, or null when not set (or unreadable): then nothing is sent. */
+    fun hintTarget(): HintTarget? = (HintTarget.parse(hintTargetText) as? Parsed.Ok)?.value
+
+    fun saveHintTarget(target: HintTarget?) {
+        putTexts(KEY_HINT_TARGET to (target?.toString() ?: ""))
+    }
+
+    /** When the last hint packet went out (wall clock), or null for never. */
+    val lastHintSentMillis: Long? get() = getHandle(KEY_HINT_SENT_AT)
+
+    /** The port in the last hint packet (0 = unknown) and the connection it went out on. */
+    val lastHintPort: Int get() = prefs.getInt(KEY_HINT_PORT, 0)
+    val lastHintHandle: Long? get() = getHandle(KEY_HINT_HANDLE)
+
+    fun recordHintSent(timeMillis: Long, handle: Long, port: Int) {
+        prefs.edit()
+            .putLong(KEY_HINT_SENT_AT, timeMillis)
+            .putLong(KEY_HINT_HANDLE, handle)
+            .putInt(KEY_HINT_PORT, port)
+            .apply()
+    }
+
+    /** How the last hint run ended, so a heartbeat is listed only when that changes. */
+    var lastHintOutcome: String?
+        get() = prefs.getString(KEY_HINT_OUTCOME, null)
+        set(value) = prefs.edit().putString(KEY_HINT_OUTCOME, value).apply()
 
     /** After a restart Android numbers networks from scratch, so an old handle means nothing. */
     fun forgetFailedConnection() {
@@ -84,6 +116,11 @@ class Store(context: Context) {
         private const val KEY_FAILED_HANDLE = "failed_handle"
         private const val KEY_INSTANT_TRIGGER_ARMED = "instant_trigger_armed"
         private const val KEY_EVENTS = "events"
+        private const val KEY_HINT_TARGET = "hint_target"
+        private const val KEY_HINT_SENT_AT = "hint_sent_at"
+        private const val KEY_HINT_PORT = "hint_port"
+        private const val KEY_HINT_HANDLE = "hint_handle"
+        private const val KEY_HINT_OUTCOME = "hint_outcome"
         private val LOCK = Any()
     }
 }

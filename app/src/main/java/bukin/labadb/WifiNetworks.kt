@@ -6,6 +6,8 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import android.os.Build
 import bukin.labadb.core.Ipv4
+import bukin.labadb.core.LabConfig
+import bukin.labadb.core.LabMatcher
 import bukin.labadb.core.NetworkSnapshot
 import java.net.Inet4Address
 import java.net.InetAddress
@@ -46,6 +48,22 @@ object WifiNetworks {
     }
 
     /**
+     * The connected lab Wi-Fi: its Network (to bind a socket to), its snapshot and the phone's
+     * own address inside the lab subnet. Null when no connected network is the lab
+     * ([LabMatcher.labAddress]: real Wi-Fi only, never a VPN or a local-only link).
+     */
+    fun lab(connectivity: ConnectivityManager, config: LabConfig): LabLink? {
+        @Suppress("DEPRECATION")
+        val all = connectivity.allNetworks
+        for (network in all) {
+            val snapshot = snapshot(connectivity, network) ?: continue
+            val address = LabMatcher.labAddress(config, snapshot) ?: continue
+            return LabLink(network, snapshot, address)
+        }
+        return null
+    }
+
+    /**
      * A link the phone hosts itself: Wi-Fi Direct as group owner (car Android Auto, screen
      * mirroring, Quick Share) or its own hotspot. From Android 15 these are registered as
      * TRANSPORT_WIFI + NET_CAPABILITY_LOCAL_NETWORK. A Wi-Fi the phone joins as a client never has
@@ -66,3 +84,6 @@ object WifiNetworks {
 
     private fun ipv4(address: InetAddress?): Int? = (address as? Inet4Address)?.let { Ipv4.fromBytes(it.address) }
 }
+
+/** The lab Wi-Fi as found by [WifiNetworks.lab]. [address] is the phone's IPv4 there. */
+class LabLink(val network: Network, val snapshot: NetworkSnapshot, val address: Int)

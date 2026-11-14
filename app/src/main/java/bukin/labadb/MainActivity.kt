@@ -17,9 +17,15 @@ import android.widget.Switch
 import android.widget.TextView
 import bukin.labadb.core.ConfigCheck
 import bukin.labadb.core.Event
+import bukin.labadb.core.HintInputs
+import bukin.labadb.core.HintRule
+import bukin.labadb.core.HintTarget
+import bukin.labadb.core.Ipv4
 import bukin.labadb.core.LabConfig
 import bukin.labadb.core.LabMatcher
 import bukin.labadb.core.MatchResult
+import bukin.labadb.core.NetworkSnapshot
+import bukin.labadb.core.Parsed
 import bukin.labadb.core.Trigger
 import java.time.Instant
 import java.time.ZoneId
@@ -27,7 +33,8 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 /**
- * The one screen: the switch, the lab subnet, status lines, Test now and the event list.
+ * The one screen: the switch, the lab subnet, status lines, Test now, the hint to ANXEL (address,
+ * key status, Send now) and the event list.
  * It never reads the Intent that started it, so other apps can't pass it anything.
  */
 class MainActivity : Activity() {
@@ -38,7 +45,11 @@ class MainActivity : Activity() {
     private lateinit var gatewayField: EditText
     private lateinit var formMessage: TextView
     private lateinit var testButton: Button
+    private lateinit var targetField: EditText
+    private lateinit var targetMessage: TextView
+    private lateinit var sendNowButton: Button
     private lateinit var timeFormat: DateTimeFormatter
+    private lateinit var clockFormat: DateTimeFormatter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -63,16 +74,22 @@ class MainActivity : Activity() {
         gatewayField = findViewById(R.id.gateway_field)
         formMessage = findViewById(R.id.form_message)
         testButton = findViewById(R.id.test_button)
+        targetField = findViewById(R.id.target_field)
+        targetMessage = findViewById(R.id.target_message)
+        sendNowButton = findViewById(R.id.send_now_button)
 
         if (savedInstanceState == null) {
             subnetField.setText(store.subnetText)
             gatewayField.setText(store.gatewayText)
+            targetField.setText(store.hintTargetText)
         }
         enabledSwitch.isChecked = store.enabled
         enabledSwitch.setOnCheckedChangeListener { _, isChecked -> onSwitchChanged(isChecked) }
         findViewById<Button>(R.id.save_button).setOnClickListener { onSave() }
         testButton.setOnClickListener { runCheck(Trigger.TEST_NOW, manual = true) }
         findViewById<Button>(R.id.app_settings_button).setOnClickListener { openAppSettings() }
+        findViewById<Button>(R.id.target_save_button).setOnClickListener { onSaveTarget() }
+        sendNowButton.setOnClickListener { onSendNow() }
     }
 
     override fun onResume() {
@@ -85,7 +102,7 @@ class MainActivity : Activity() {
         if (isChecked == store.enabled) return
         if (isChecked && store.labConfig() == null) {
             enabledSwitch.isChecked = false
-            showFormMessage(getString(R.string.save_subnet_first), isError = true)
+            showMessage(formMessage, getString(R.string.save_subnet_first), isError = true)
             return
         }
         store.enabled = isChecked
@@ -105,7 +122,7 @@ class MainActivity : Activity() {
             is ConfigCheck.Invalid -> {
                 check.subnetError?.let { subnetField.error = it }
                 check.gatewayError?.let { gatewayField.error = it }
-                showFormMessage(listOfNotNull(check.subnetError, check.gatewayError).joinToString("\n"), isError = true)
+                showMessage(formMessage, listOfNotNull(check.subnetError, check.gatewayError).joinToString("\n"), isError = true)
             }
             is ConfigCheck.Valid -> {
                 val config = check.config
@@ -117,12 +134,46 @@ class MainActivity : Activity() {
                 } else {
                     getString(R.string.saved_with_gateway, config.subnet.toString(), config.gatewayText)
                 }
-                showFormMessage(saved, isError = false)
+                showMessage(formMessage, saved, isError = false)
                 hideKeyboard()
                 if (Arming.sync(this).armed) {
                     runCheck(Trigger.SETTINGS_SAVED)
                 } else {
                     store.log(getString(R.string.setting_saved_log))
+                    refreshStatus()
+                }
+            }
+        }
+    }
+
+    /** The ANXEL address: an IPv4 literal and a port, or empty to turn hints off. */
+    private fun onSaveTarget() {
+        targetField.error = null
+        when (val check = HintTarget.parse(targetField.text.toString())) {
+            is Parsed.Invalid -> {
+                targetField.error = check.message
+                showMessage(targetMessage, check.message, isError = true)
+            }
+            is Parsed.Ok -> {
+                val target = check.value
+                store.saveHintTarget(target)
+                targetField.setText(target?.toString().orEmpty())
+                val text = if (target == null) getString(R.string.target_cleared) else getString(R.string.target_saved, target.toString())
+                showMessage(targetMessage, text, isError = false)
+                // The event list never stores addresses: only that it changed.
+                store.log(getString(if (target == null) R.string.target_cleared_log else R.string.target_saved_log))
+                hideKeyboard()
+                refreshStatus()
+            }
+        }
+    }
+
+    private fun onSendNow() {
+        sendNowButton.isEnabled = false
+        Hints.sendNow(this) {
+            runOnUiThread {
+                if (!isDestroyed) {
+                    sendNowButton.isEnabled = true
                     refreshStatus()
                 }
             }
@@ -152,7 +203,8 @@ class MainActivity : Activity() {
         findViewById<View>(R.id.grant_command).visibility = if (granted) View.GONE else View.VISIBLE
 
         val config = store.labConfig()
-        val wifi = WifiNetworks.connected(getSystemService(ConnectivityManager::class.java))
+        val connectivity = getSystemService(ConnectivityManager::class.java)
+        val wifi = WifiNetworks.connected(connectivity)
         val onLab = config != null && wifi.any { LabMatcher.match(config, it) == MatchResult.MATCH }
         val labText = when {
             onLab -> R.string.status_lab_ok
@@ -162,7 +214,8 @@ class MainActivity : Activity() {
         }
         setStatus(R.id.status_lab, onLab, labText, labText)
 
-        when (AdbWifiSetting.read(contentResolver)) {
+        val adbValue = AdbWifiSetting.read(contentResolver)
+        when (adbValue) {
             null -> setStatus(R.id.status_adb, false, R.string.status_adb_unknown, R.string.status_adb_unknown)
             0 -> setStatus(R.id.status_adb, false, R.string.status_adb_on, R.string.status_adb_off)
             else -> setStatus(R.id.status_adb, true, R.string.status_adb_on, R.string.status_adb_off)
@@ -175,11 +228,50 @@ class MainActivity : Activity() {
         val pauseOff = packageManager.isAutoRevokeWhitelisted
         setStatus(R.id.status_pause, pauseOff, R.string.status_pause_ok, R.string.status_pause_bad)
 
-        val events = store.events().newestFirst()
         // Built on each refresh, so it follows a locale or time zone change.
         timeFormat = DateTimeFormatter.ofPattern("d MMM HH:mm", Locale.getDefault()).withZone(ZoneId.systemDefault())
+        clockFormat = DateTimeFormatter.ofPattern("HH:mm:ss", Locale.getDefault()).withZone(ZoneId.systemDefault())
+        refreshHint(config?.let { WifiNetworks.lab(connectivity, it) }, wifi, debuggingOn = adbValue != null && adbValue != 0)
+
+        val events = store.events().newestFirst()
         findViewById<TextView>(R.id.events).text =
             if (events.isEmpty()) getString(R.string.events_empty) else events.joinToString("\n", transform = ::eventLine)
+    }
+
+    /**
+     * The hint lines: the phone's Wi-Fi IP and debugging port, key set, ready or why not, and
+     * when the last hint went out. The port shown is the one sent last on this same connection,
+     * while Wireless debugging is still on.
+     */
+    private fun refreshHint(lab: LabLink?, wifi: List<NetworkSnapshot>, debuggingOn: Boolean) {
+        val phoneIp = lab?.address ?: wifi.firstNotNullOfOrNull { it.ipv4Addresses.firstOrNull() }
+        val port = store.lastHintPort.takeIf {
+            it != 0 && debuggingOn && lab != null && store.lastHintHandle == lab.snapshot.handle
+        }
+        findViewById<TextView>(R.id.hint_phone).text = if (phoneIp == null) {
+            getString(R.string.hint_phone_no_wifi)
+        } else {
+            getString(R.string.hint_phone, Ipv4.format(phoneIp), port?.toString() ?: getString(R.string.hint_port_unknown))
+        }
+
+        val keySet = HintKeyFile.isSet(this)
+        setStatus(R.id.status_key, keySet, R.string.status_key_ok, R.string.status_key_missing)
+
+        val inputs = HintInputs(
+            enabled = store.enabled,
+            onLab = lab != null,
+            debuggingOn = debuggingOn,
+            keySet = keySet,
+            targetSet = store.hintTarget() != null,
+        )
+        val block = HintRule.block(inputs)
+        val hintStatus = findViewById<TextView>(R.id.status_hint)
+        hintStatus.text = if (block == null) getString(R.string.status_hint_ready) else getString(R.string.status_hint_blocked, block.text)
+        hintStatus.setTextColor(getColor(if (block == null) R.color.status_ok else R.color.status_bad))
+
+        findViewById<TextView>(R.id.hint_last_sent).text = store.lastHintSentMillis
+            ?.let { getString(R.string.hint_last_sent, clockFormat.format(Instant.ofEpochMilli(it))) }
+            ?: getString(R.string.hint_never_sent)
     }
 
     private fun setStatus(viewId: Int, ok: Boolean, okText: Int, badText: Int) {
@@ -194,10 +286,10 @@ class MainActivity : Activity() {
         return "$time  ${event.message}$repeats"
     }
 
-    private fun showFormMessage(text: String, isError: Boolean) {
-        formMessage.text = text
-        formMessage.setTextColor(getColor(if (isError) R.color.status_bad else R.color.status_ok))
-        formMessage.visibility = View.VISIBLE
+    private fun showMessage(view: TextView, text: String, isError: Boolean) {
+        view.text = text
+        view.setTextColor(getColor(if (isError) R.color.status_bad else R.color.status_ok))
+        view.visibility = View.VISIBLE
     }
 
     private fun hideKeyboard() {
