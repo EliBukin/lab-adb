@@ -132,9 +132,10 @@ Nothing else: no names, no Wi-Fi names, no location.
 for example `192.0.2.10:47113`. It is empty by default. Host names are not accepted, so the app
 never looks anything up.
 
-**When:**
-- right after the app switches Wireless debugging on: 3 times, at 0, 3 and 8 seconds, because UDP
-  can drop a packet;
+**When:** each time, the app first looks for the port (up to 5 seconds, see below), so that every
+message carries it. Then it sends:
+- right after the app switches Wireless debugging on: 3 times, 0, 3 and 8 seconds after that
+  search, because UDP can drop a packet;
 - once at each 15-minute check while the phone is at the lab with Wireless debugging on;
 - once when you tap **Send now**.
 
@@ -151,8 +152,8 @@ debugging is on, the key is set and the address is set. The screen says which on
 **The port:** Android doesn't give apps the Wireless debugging port. The phone announces it on the
 Wi-Fi itself (mDNS service `_adb-tls-connect._tcp`), and the app finds that announcement with
 Android's service discovery, keeping only the one at the phone's own address. That needs Android
-14 or newer and takes up to 5 seconds. If it doesn't work, the hint carries port 0, and the
-computer has to find the port itself.
+14 or newer, and the app waits up to 5 seconds for it before the first message. Only if it finds
+nothing does the hint carry port 0, and then the computer has to find the port itself.
 
 **The signature:** `mac` is HMAC-SHA256 over the ASCII text `labadb|1|<model>|<port>|<t>`, as 64
 lowercase hex digits. The key is 32 random bytes, kept as 64 hex characters; the HMAC uses the 32

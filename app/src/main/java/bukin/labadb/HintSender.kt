@@ -23,7 +23,8 @@ import java.net.InetAddress
  * another Wi-Fi. Send-only: it never listens and never reads a reply. On a send error it lists
  * one event and stops: no retries.
  *
- * Blocking (a burst takes about 8 s, a single send up to about 5 s): run it on [Hints] only.
+ * Blocking: every kind first waits up to [HintRule.PORT_SEARCH_MS] (5 s) for the port, then a
+ * burst takes 8 s more. Run it on [Hints] only.
  */
 class HintSender(context: Context) {
 
@@ -44,7 +45,8 @@ class HintSender(context: Context) {
                     first.key.fill(0)
                     val handle = first.lab.snapshot.handle
                     finder = startPortSearch(first.lab)
-                    if (kind.waitsForPort) finder?.await(PORT_SEARCH_MS)
+                    // Offsets count from after this wait, so packet 1 already has the port if found.
+                    if (kind.waitsForPort) finder?.await(HintRule.PORT_SEARCH_MS)
                     val start = SystemClock.elapsedRealtime()
                     for (offset in kind.offsetsMs) {
                         if (stop.waitUntil(start + offset)) break
@@ -108,7 +110,7 @@ class HintSender(context: Context) {
     private fun startPortSearch(lab: LabLink): PortFinder? {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) return null
         return try {
-            PortFinder.start(app, lab.network, lab.address, PORT_SEARCH_MS)
+            PortFinder.start(app, lab.network, lab.address, HintRule.PORT_SEARCH_MS)
         } catch (e: RuntimeException) {
             Log.d(Store.TAG, "Port search: ${e.javaClass.simpleName}")
             null
@@ -135,10 +137,5 @@ class HintSender(context: Context) {
             Log.w(Store.TAG, "Hint send failed: ${e.javaClass.simpleName}")
             false
         }
-    }
-
-    private companion object {
-        /** How long a search for the debugging port may take. After it: port 0 ("unknown"). */
-        const val PORT_SEARCH_MS = 5_000L
     }
 }

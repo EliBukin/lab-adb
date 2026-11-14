@@ -2,12 +2,17 @@ package bukin.labadb.core
 
 /**
  * Why a hint is sent.
- * @param offsetsMs when each packet goes out, from the start. Each packet gets its own t and mac.
- * @param waitsForPort true when the one packet waits (a few seconds at most) for the port first.
+ * @param offsetsMs when each packet goes out, counted from the end of the port search. Each
+ *   packet gets its own t and mac.
+ * @param waitsForPort true when the first packet waits for the port search (at most
+ *   [HintRule.PORT_SEARCH_MS]), so that every packet carries the real port when it is found.
  */
 enum class HintKind(val offsetsMs: List<Long>, val waitsForPort: Boolean) {
-    /** Right after the app's own confirmed switch-on: 3 packets, because UDP can drop one. */
-    BURST(listOf(0L, 3_000L, 8_000L), waitsForPort = false),
+    /**
+     * Right after the app's own confirmed switch-on: 3 packets, because UDP can drop one. It waits
+     * for the port first: a port-0 packet makes ANXEL scan the phone's ports through the router.
+     */
+    BURST(listOf(0L, 3_000L, 8_000L), waitsForPort = true),
 
     /** At a 15-minute backup check on the lab Wi-Fi with Wireless debugging on. */
     HEARTBEAT(listOf(0L), waitsForPort = true),
@@ -40,6 +45,9 @@ data class HintInputs(
 object HintRule {
 
     const val SEND_FAILED = "Hint send failed"
+
+    /** How long the search for the debugging port may take. After it: port 0 ("unknown"). */
+    const val PORT_SEARCH_MS = 5_000L
 
     /** Send only when ALL hold: switch on, lab Wi-Fi, Wireless debugging on, address set, key set. */
     fun block(inputs: HintInputs): HintBlock? = when {

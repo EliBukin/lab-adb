@@ -55,12 +55,22 @@ class HintRuleTest {
     @Test
     fun theBurstIsThreePacketsAt0And3And8Seconds() {
         assertEquals(listOf(0L, 3_000L, 8_000L), HintKind.BURST.offsetsMs)
-        assertFalse(HintKind.BURST.waitsForPort)
-        assertTrue(HintKind.BURST.offsetsMs.last() < 15_000L)
-        for (kind in listOf(HintKind.HEARTBEAT, HintKind.MANUAL)) {
-            assertEquals(listOf(0L), kind.offsetsMs)
-            assertTrue(kind.waitsForPort)
-        }
+        for (kind in listOf(HintKind.HEARTBEAT, HintKind.MANUAL)) assertEquals(listOf(0L), kind.offsetsMs)
+    }
+
+    @Test
+    fun theBurstWaitsForThePortBeforePacket1() {
+        // Otherwise packet 1 of every arrival carries port 0 and ANXEL scans the phone's ports.
+        assertTrue(HintKind.BURST.waitsForPort)
+        for (kind in HintKind.entries) assertTrue(kind.name, kind.waitsForPort)
+        assertEquals(5_000L, HintRule.PORT_SEARCH_MS)
+    }
+
+    @Test
+    fun aWholeBurstStillEndsWithin15Seconds() {
+        // Port search (at most 5 s), then packets at +0, +3 and +8 s: 13 s at most.
+        assertEquals(13_000L, HintRule.PORT_SEARCH_MS + HintKind.BURST.offsetsMs.last())
+        assertTrue(HintRule.PORT_SEARCH_MS + HintKind.BURST.offsetsMs.last() < 15_000L)
     }
 
     @Test
