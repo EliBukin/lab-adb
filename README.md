@@ -8,10 +8,12 @@ Android switches Wireless debugging off every time the phone leaves Wi-Fi. Lab A
 back on when the phone is on the lab network again.
 
 > **Status: 0.5.0.** Switching Wireless debugging back on is tested in daily use on a Samsung
-> phone with Android 16: a restart, a full day at the lab, and trips away and back. Each time it
-> switched it back on by itself, within half a second of joining the lab Wi-Fi. 0.5.0 adds an
-> optional hint that tells your computer the phone's address and port; its first phone test is
-> still to come.
+> phone with Android 16: a restart, a full day at the lab, and trips away and back. After each
+> trip it switched it back on by itself, within half a second of joining the lab Wi-Fi. 0.5.0
+> adds an optional hint that tells your computer the phone's address and port. It is tested too:
+> after Wi-Fi off and on, and after two returns to the lab Wi-Fi with the screen off, the app
+> found the port itself, and the computer reconnected about 5 seconds after the phone joined the
+> Wi-Fi, without searching.
 
 Android 11 or newer. Sideloaded only: it is not on Google Play.
 
